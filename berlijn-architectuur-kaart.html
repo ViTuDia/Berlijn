@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Berlijn · Siedlungen, baksteen & beton</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1b1b1d;
+    --paper:#fafaf7;
+    --line:#e3e1da;
+    --brick:#b5402b;   /* 1913–1941 */
+    --ddr:#29618e;     /* 1951–1963 */
+    --beton:#55555e;   /* 1964–1981 */
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{font-family:'Jost',system-ui,sans-serif;color:var(--ink);background:var(--paper);display:flex;flex-direction:column}
+
+  header{
+    background:var(--paper);
+    border-bottom:1px solid var(--line);
+    padding:10px 14px 8px;
+    z-index:1000;
+  }
+  header h1{
+    font-size:15px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  }
+  header .sub{font-size:12px;color:#6b6b66;margin-top:1px}
+
+  .chips{display:flex;gap:6px;margin-top:8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .chip{
+    flex:0 0 auto;display:flex;align-items:center;gap:6px;
+    font-family:inherit;font-size:12px;font-weight:600;letter-spacing:.02em;
+    padding:6px 10px;border:1px solid var(--line);border-radius:3px;
+    background:#fff;color:var(--ink);cursor:pointer;white-space:nowrap;
+    transition:opacity .15s;
+  }
+  .chip .dot{width:11px;height:11px;border-radius:2px}
+  .chip[data-era="A"] .dot{background:var(--brick)}
+  .chip[data-era="B"] .dot{background:var(--ddr)}
+  .chip[data-era="C"] .dot{background:var(--beton)}
+  .chip.off{opacity:.35}
+  .chip .n{color:#8a8a84;font-weight:500}
+
+  #map{flex:1;width:100%;background:#eceae4}
+
+  /* popup */
+  .leaflet-popup-content-wrapper{border-radius:4px;box-shadow:0 6px 24px rgba(0,0,0,.18);padding:0;overflow:hidden}
+  .leaflet-popup-content{margin:0;width:248px !important;font-family:'Jost',sans-serif}
+  .pop-img{width:100%;height:130px;background:#e8e6df;overflow:hidden;display:none}
+  .pop-img img{width:100%;height:100%;object-fit:cover;display:block}
+  .pop-body{padding:11px 13px 13px}
+  .era-tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#fff;padding:2px 6px;border-radius:2px;margin-bottom:6px}
+  .pop-body h3{font-size:15px;font-weight:700;line-height:1.2;margin-bottom:3px}
+  .pop-meta{font-size:12px;color:#55554f;margin-bottom:6px}
+  .pop-addr{font-size:12px;color:#8a8a84;margin-bottom:7px}
+  .pop-note{font-size:12.5px;line-height:1.45;margin-bottom:10px}
+  .pop-links{display:flex;gap:12px;font-size:12.5px;font-weight:600}
+  .pop-links a{color:var(--ink);text-decoration:none;border-bottom:2px solid currentColor;padding-bottom:1px}
+  .pop-links a.maps{color:#1a6b3c}
+  .leaflet-popup-tip{box-shadow:none}
+  .leaflet-container a.leaflet-popup-close-button{top:6px;right:8px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5);font-size:20px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Berlijn — Siedlungen, baksteen &amp; beton</h1>
+  <div class="sub">26 objecten in de buitenwijken &amp; Potsdam · 1913–1981 · tik op een bol</div>
+  <div class="chips">
+    <button class="chip" data-era="A"><span class="dot"></span>1913–’41 Siedlungen <span class="n" id="nA"></span></button>
+    <button class="chip" data-era="B"><span class="dot"></span>1951–’63 Wederopbouw &amp; DDR <span class="n" id="nB"></span></button>
+    <button class="chip" data-era="C"><span class="dot"></span>1964–’81 Beton <span class="n" id="nC"></span></button>
+  </div>
+</header>
+
+<div id="map"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const ERAS = {
+  A:{label:"1913–1941",color:"#b5402b"},
+  B:{label:"1951–1963",color:"#29618e"},
+  C:{label:"1964–1981",color:"#55555e"}
+};
+
+const SITES = [
+ // ── A · Siedlungen, baksteen, expressionisme ──────────────────
+ {era:"A",name:"Hufeisensiedlung",arch:"Bruno Taut & Martin Wagner",yrs:"1925–1930",
+  addr:"Fritz-Reuter-Allee 44, Britz (Neukölln)",lat:52.4486,lng:13.4470,wiki:"Hufeisensiedlung",
+  note:"Hét icoon: hoefijzervormig superblok rond een vijver, UNESCO. Kleurgebruik van Taut op z'n best."},
+ {era:"A",name:"Waldsiedlung 'Onkel Toms Hütte'",arch:"Bruno Taut, Hugo Häring, O.R. Salvisberg",yrs:"1926–1932",
+  addr:"Argentinische Allee / Riemeisterstraße, Zehlendorf",lat:52.4505,lng:13.2500,wiki:"Waldsiedlung Zehlendorf",
+  note:"'Papegaaiensiedlung' in het bos — felgekleurde gevels tussen de dennen. Heerlijk wandelgebied, UNESCO."},
+ {era:"A",name:"Weiße Stadt",arch:"Salvisberg, Ahrends, Büning",yrs:"1929–1931",
+  addr:"Aroser Allee 154, Reinickendorf",lat:52.5667,lng:13.3440,wiki:"Weiße Stadt (Berlin)",
+  note:"Wit Neues Bauen met de beroemde brugwoning over de Aroser Allee. UNESCO."},
+ {era:"A",name:"Siedlung Schillerpark",arch:"Bruno Taut",yrs:"1924–1930",
+  addr:"Bristolstraße 1, Wedding",lat:52.5536,lng:13.3553,wiki:"Siedlung Schillerpark",
+  note:"Tauts eerbetoon aan de Amsterdamse School: rood baksteenwerk, loggia's. UNESCO."},
+ {era:"A",name:"Gartenstadt Falkenberg",arch:"Bruno Taut",yrs:"1913–1916",
+  addr:"Akazienhof 1, Bohnsdorf (Treptow)",lat:52.4053,lng:13.5734,wiki:"Gartenstadt Falkenberg",
+  note:"'Tuschkastensiedlung' — Tauts vroegste kleurexperiment, tuinstadidylle. UNESCO."},
+ {era:"A",name:"Großsiedlung Siemensstadt (Ringsiedlung)",arch:"Scharoun, Gropius, Häring, Bartning e.a.",yrs:"1929–1931",
+  addr:"Goebelstraße 2, Siemensstadt (Spandau)",lat:52.5384,lng:13.2730,wiki:"Großsiedlung Siemensstadt",
+  note:"Staalkaart van het Neues Bauen: Scharouns 'Panzerkreuzer' naast Härings organische blokken. UNESCO."},
+ {era:"A",name:"Wohnstadt Carl Legien",arch:"Bruno Taut & Franz Hillinger",yrs:"1928–1930",
+  addr:"Erich-Weinert-Straße 49, Prenzlauer Berg",lat:52.5486,lng:13.4296,wiki:"Wohnstadt Carl Legien",
+  note:"Stedelijkste van de zes UNESCO-Siedlungen: groene hoven, kleur aan de hofzijde."},
+ {era:"A",name:"Kirche am Hohenzollernplatz",arch:"Fritz Höger",yrs:"1930–1933",
+  addr:"Nassauische Straße 66–67, Wilmersdorf",lat:52.4942,lng:13.3208,wiki:"Kirche am Hohenzollernplatz",
+  note:"Baksteenexpressionisme van de Chilehaus-architect: parabolische beton­spanten, klinkers met venijn."},
+ {era:"A",name:"Schaubühne (vm. Universum-kino)",arch:"Erich Mendelsohn",yrs:"1926–1928",
+  addr:"Kurfürstendamm 153, Wilmersdorf",lat:52.4988,lng:13.2890,wiki:"Schaubühne am Lehniner Platz",
+  note:"Mendelsohns gestroomlijnde bioscoop — de dynamiek van de jaren twintig in één gebogen gevel."},
+ {era:"A",name:"Landhaus Lemke (Mies van der Rohe Haus)",arch:"Ludwig Mies van der Rohe",yrs:"1932–1933",
+  addr:"Oberseestraße 60, Alt-Hohenschönhausen",lat:52.5560,lng:13.4880,wiki:"Landhaus Lemke",
+  note:"Mies' laatste Duitse woonhuis: sober baksteen-L aan het meer. Klein, gratis te bezoeken."},
+ {era:"A",name:"AEG-Turbinefabriek",arch:"Peter Behrens",yrs:"1909",
+  addr:"Huttenstraße 12–19, Moabit",lat:52.5295,lng:13.3235,wiki:"AEG-Turbinenfabrik",
+  note:"De oerkathedraal van de industriearchitectuur — leermeester van Mies, Gropius én Corbusier."},
+ {era:"A",name:"Peter-Behrens-Bau (NAG-fabriek)",arch:"Peter Behrens",yrs:"1915–1917",
+  addr:"Ostendstraße 1, Oberschöneweide",lat:52.4600,lng:13.5300,wiki:"Peter-Behrens-Bau",
+  note:"Monumentale fabriekstoren aan de Spree; combineer met het Funkhaus verderop."},
+ {era:"A",name:"Flughafen Tempelhof",arch:"Ernst Sagebiel",yrs:"1936–1941",
+  addr:"Platz der Luftbrücke 5, Tempelhof",lat:52.4838,lng:13.3870,wiki:"Flughafen Berlin-Tempelhof",
+  note:"1,2 km gebouwde boog, ooit het grootste gebouw ter wereld. Het veld is nu stadspark."},
+
+ // ── B · Wederopbouw & DDR-moderne ─────────────────────────────
+ {era:"B",name:"Hansaviertel (Interbau '57)",arch:"Aalto, Niemeyer, Jacobsen, Gropius e.a.",yrs:"1957",
+  addr:"Altonaer Straße 4–14, Tiergarten",lat:52.5190,lng:13.3420,wiki:"Hansaviertel",
+  note:"Westers antwoord op de Stalinallee: wonen in het park, met de hele internationale top van '57."},
+ {era:"B",name:"Corbusierhaus",arch:"Le Corbusier",yrs:"1957–1958",
+  addr:"Flatowallee 16, Westend",lat:52.5163,lng:13.2453,wiki:"Corbusierhaus",
+  note:"Unité d'habitation, Berlijnse editie — beton brut naast het Olympiastadion."},
+ {era:"B",name:"Karl-Marx-Allee",arch:"Hermann Henselmann e.a.",yrs:"1952–1960",
+  addr:"Strausberger Platz → Frankfurter Tor, Friedrichshain",lat:52.5188,lng:13.4290,wiki:"Karl-Marx-Allee",
+  note:"Stalinistische 'Zuckerbäcker'-boulevard, 90 m breed. Loop van Strausberger Platz naar Frankfurter Tor."},
+ {era:"B",name:"Kino International",arch:"Josef Kaiser",yrs:"1961–1963",
+  addr:"Karl-Marx-Allee 33, Mitte",lat:52.5206,lng:13.4229,wiki:"Kino International",
+  note:"DDR-moderne op z'n elegantst: zwevende foyer met reliëffries. Draai er een film als het lukt."},
+ {era:"B",name:"Funkhaus Nalepastraße",arch:"Franz Ehrlich",yrs:"1951–1956",
+  addr:"Nalepastraße 18, Oberschöneweide",lat:52.4700,lng:13.4930,wiki:"Funkhaus Nalepastraße",
+  note:"DDR-omroephuis van Bauhäusler (en Buchenwald-overlevende) Ehrlich. Baksteen, akoestiek, rondleidingen."},
+
+ // ── C · Beton, brutalisme, megastructuren ─────────────────────
+ {era:"C",name:"Gropiusstadt",arch:"Walter Gropius (masterplan)",yrs:"1962–1975",
+  addr:"Lipschitzallee / Fritz-Erler-Allee, Neukölln",lat:52.4260,lng:13.4640,wiki:"Gropiusstadt",
+  note:"Großsiedlung voor 36.000 mensen; het Ideal-hoogbouwpunt (Düttmann) is 89 m. Combineer met de Hufeisensiedlung — de hele eeuw in één U-Bahnlijn."},
+ {era:"C",name:"Märkisches Viertel",arch:"Düttmann, Heinrichs, Müller e.a.",yrs:"1963–1974",
+  addr:"Wilhelmsruher Damm 142, Reinickendorf",lat:52.5980,lng:13.3560,wiki:"Märkisches Viertel",
+  note:"Beruchte én fascinerende satellietstad — kleurige megablokken, sindsdien zorgvuldig gerenoveerd."},
+ {era:"C",name:"Schlangenbader Straße ('Die Schlange')",arch:"Georg Heinrichs",yrs:"1976–1980",
+  addr:"Schlangenbader Straße 12–32, Wilmersdorf",lat:52.4747,lng:13.3066,wiki:"Autobahnüberbauung Schlangenbader Straße",
+  note:"600 m woongebouw bóven de snelweg — de radicaalste megastructuur van Europa."},
+ {era:"C",name:"Mäusebunker",arch:"Gerd & Magdalena Hänska",yrs:"1971–1981",
+  addr:"Krahmerstraße 6, Lichterfelde",lat:52.4435,lng:13.3055,wiki:"Mäusebunker",
+  note:"Brutalistisch slagschip met blauwe ventilatiekanonnen. Van sloop gered, monument sinds 2023."},
+ {era:"C",name:"Hygieneinstituut (Fehling + Gogel)",arch:"Hermann Fehling & Daniel Gogel",yrs:"1966–1974",
+  addr:"Hindenburgdamm 27, Lichterfelde",lat:52.4453,lng:13.3093,wiki:"Institut für Hygiene und Umweltmedizin",
+  note:"Sculpturaal beton, Scharoun-school — staat pal naast de Mäusebunker: één stop, twee iconen."},
+ {era:"C",name:"Bierpinsel",arch:"Ralf Schüler & Ursulina Schüler-Witte",yrs:"1972–1976",
+  addr:"Schloßstraße 17, Steglitz",lat:52.4565,lng:13.3215,wiki:"Bierpinsel",
+  note:"Pop-brutalisme: 47 m hoge 'boom' boven de U-Bahn. Pure funk."},
+ {era:"C",name:"ICC Berlin",arch:"Ralf Schüler & Ursulina Schüler-Witte",yrs:"1975–1979",
+  addr:"Messedamm 22, Westend",lat:52.5067,lng:13.2810,wiki:"Internationales Congress Centrum Berlin",
+  note:"Ruimteschip van aluminium, 320 m lang — duurste gebouw van West-Berlijn ooit."},
+ {era:"C",name:"St. Agnes (König Galerie)",arch:"Werner Düttmann",yrs:"1964–1967",
+  addr:"Alexandrinenstraße 118–121, Kreuzberg",lat:52.5025,lng:13.4000,wiki:"St.-Agnes-Kirche (Berlin)",
+  note:"Brutalistische kerk, nu galerie — binnenlopen kan gewoon, en het interieur is de reis waard."},
+ {era:"C",name:"Einsteinturm",arch:"Erich Mendelsohn",yrs:"1919–1922",
+  addr:"Telegrafenberg, Potsdam",lat:52.3791,lng:13.0635,wiki:"Einsteinturm",
+  note:"Expressionistische zonnetoren — gedacht in beton, deels gemetseld. Hoort qua jaartal bij groep A, maar ligt op de Potsdam-route."}
+];
+
+const map = L.map('map',{zoomControl:true});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+  attribution:'&copy; OpenStreetMap &copy; CARTO',maxZoom:19
+}).addTo(map);
+
+const groups = {A:L.layerGroup().addTo(map),B:L.layerGroup().addTo(map),C:L.layerGroup().addTo(map)};
+const counts = {A:0,B:0,C:0};
+const bounds = [];
+
+SITES.forEach((s,i)=>{
+  counts[s.era]++;
+  bounds.push([s.lat,s.lng]);
+  const m = L.circleMarker([s.lat,s.lng],{
+    radius:9,color:'#fff',weight:2,fillColor:ERAS[s.era].color,fillOpacity:.95
+  });
+  const gmaps = 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(s.name+', '+s.addr+', Berlin');
+  m.bindPopup(`
+    <div class="pop-img" id="img-${i}"></div>
+    <div class="pop-body">
+      <span class="era-tag" style="background:${ERAS[s.era].color}">${ERAS[s.era].label}</span>
+      <h3>${s.name}</h3>
+      <div class="pop-meta">${s.arch} · ${s.yrs}</div>
+      <div class="pop-addr">${s.addr}</div>
+      <div class="pop-note">${s.note}</div>
+      <div class="pop-links">
+        <a class="maps" href="${gmaps}" target="_blank" rel="noopener">Route ↗</a>
+        <span id="wiki-${i}"></span>
+      </div>
+    </div>`,{maxWidth:248,minWidth:248});
+  m.on('popupopen',()=>loadWiki(s,i));
+  m.addTo(groups[s.era]);
+});
+
+map.fitBounds(bounds,{padding:[28,28]});
+
+document.getElementById('nA').textContent = counts.A;
+document.getElementById('nB').textContent = counts.B;
+document.getElementById('nC').textContent = counts.C;
+
+// foto + wikilink via Wikipedia (Duits), met cache en stille fallback
+const wikiCache = {};
+async function loadWiki(s,i){
+  const imgBox = document.getElementById('img-'+i);
+  const linkBox = document.getElementById('wiki-'+i);
+  if(!imgBox || !s.wiki) return;
+  try{
+    let d = wikiCache[s.wiki];
+    if(!d){
+      const r = await fetch('https://de.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(s.wiki));
+      if(!r.ok) throw 0;
+      d = await r.json();
+      wikiCache[s.wiki] = d;
+    }
+    if(d.thumbnail && d.thumbnail.source){
+      imgBox.innerHTML = '<img src="'+d.thumbnail.source.replace(/\/\d+px-/,'/480px-')+'" alt="">';
+      imgBox.style.display = 'block';
+    }
+    if(d.content_urls && linkBox){
+      linkBox.innerHTML = '<a href="'+d.content_urls.desktop.page+'" target="_blank" rel="noopener">Wikipedia ↗</a>';
+    }
+  }catch(e){ /* geen foto beschikbaar — popup blijft bruikbaar */ }
+}
+
+// filters
+document.querySelectorAll('.chip').forEach(chip=>{
+  chip.addEventListener('click',()=>{
+    const era = chip.dataset.era;
+    const off = chip.classList.toggle('off');
+    if(off){ map.removeLayer(groups[era]); }
+    else { groups[era].addTo(map); }
+  });
+});
+</script>
+</body>
+</html>
